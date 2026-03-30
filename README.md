@@ -1,30 +1,30 @@
-# 🛡️ Secure API Gateway
+# Secure API Gateway
 
 A high-performance, enterprise-grade secure API gateway built with Go. Designed for mission-critical endpoints (SCADA, Actuator, IoT), this gateway acts as a robust middlebox providing Authentication, Rate Limiting, Request Proxying, and Real-time Analytics. 
 
 It comes with a built-in high-fidelity cybersecurity dashboard for real-time traffic monitoring and threat detection.
 
-## ✨ Key Features
+## Key Features
 
-- **🚀 High-Performance Proxy**: Efficient routing to core backend microservices (e.g., SCADA, Control Systems).
-- **🔐 JWT Authentication**: Asymmetric key-based JWT issuance and strict endpoint verification. 
-- **⚖️ Dynamic Rate Limiting**: Built-in limits managed via Redis or Memory to protect against DDoS and abuse. Configuration driven at the per-route level.
-- **📊 Real-time Dashboard**: A premium frontend providing comprehensive visibility into active connections, blocked requests, and geographical threat visualizations.
-- **⚙️ Configuration Driven**: Easy to configure through `config.yaml` to specify backend routes, environments, and rate limit rules.
+- **High-Performance Proxy**: Efficient routing to core backend microservices (e.g., SCADA, Control Systems).
+- **JWT Authentication**: Asymmetric key-based JWT issuance and strict endpoint verification. 
+- **Dynamic Rate Limiting**: Built-in limits managed via Redis or Memory to protect against DDoS and abuse. Configuration driven at the per-route level.
+- **Real-time Dashboard**: A premium frontend providing comprehensive visibility into active connections, blocked requests, and geographical threat visualizations.
+- **Configuration Driven**: Easy to configure through `config.yaml` to specify backend routes, environments, and rate limit rules.
 
-## 🏗️ Architecture
+## Architecture
 
 - **Backend**: Golang (`cmd/gateway/main.go`)
 - **Frontend**: Vite (`frontend/` and `dashboard/`)
 - **Storage/Caching**: Redis (`docker-compose.yml`)
 
-## 🛠️ Prerequisites
+## Prerequisites
 
 - **Go** (1.21+)
 - **Node.js** & **npm** (for the frontend dashboard)
 - **Docker & Docker Compose** (for running the Redis container)
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Set Up Redis
 Ensure you have Redis running in the background for distributed rate limiting and state management.
@@ -54,7 +54,7 @@ npm install
 npm run dev
 ```
 
-## ⚙️ Configuration Reference (`config.yaml`)
+## Configuration Reference (`config.yaml`)
 
 Your API Gateway depends heavily on the `config.yaml` properties. Below is an example structure:
 
@@ -81,8 +81,5 @@ routes:
       window_seconds: 60
 ```
 
-## 🤝 Contributing
+## Contributing
 Contributions, issues, and feature requests are welcome!
-
-## 📄 License
-This project is licensed under the MIT License.
