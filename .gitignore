@@ -1,0 +1,6 @@
+.env
+*.pem
+*.key
+/bin
+__debug_bin
+keys/

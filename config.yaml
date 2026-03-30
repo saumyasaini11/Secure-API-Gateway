@@ -1,0 +1,40 @@
+server:
+  port: 8080
+  admin_port: 8081
+  env: development
+
+redis:
+  addr: localhost:6379
+  password: securepass123
+  db: 0
+
+jwt:
+  private_key_path: ./keys/private.pem
+  public_key_path: ./keys/public.pem
+  issuer: secure-api-gateway
+  token_ttl_minutes: 15
+
+routes:
+  - path: /api/scada/sensor-data
+    backend: http://localhost:9001
+    rate_limit:
+      requests: 100
+      window_seconds: 60
+
+  - path: /api/scada/status
+    backend: http://localhost:9001
+    rate_limit:
+      requests: 60
+      window_seconds: 60
+
+  - path: /api/control/actuator
+    backend: http://localhost:9002
+    rate_limit:
+      requests: 10
+      window_seconds: 60
+
+auth:
+  token_endpoint: /auth/token
+  rate_limit:
+    requests: 5
+    window_seconds: 60

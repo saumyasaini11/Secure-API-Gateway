@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Secure API Gateway — Monitor</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
+
+    :root {
+      --bg: #0a0e1a;
+      --panel: #0f1628;
+      --border: #1a2744;
+      --accent: #00d4ff;
+      --green: #00ff88;
+      --red: #ff3366;
+      --yellow: #ffcc00;
+      --text: #c8d8f0;
+      --dim: #4a6080;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.3;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15, 22, 40, 0.9);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+      }
+
+      50% {
+        box-shadow: 0 0 24px rgba(0, 212, 255, 0.7);
+      }
+    }
+
+    .logo h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .logo span {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--dim);
+      display: block;
+      letter-spacing: 1px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: blink 1.5s ease-in-out infinite;
+    }
+
+    .dot.red {
+      background: var(--red);
+      box-shadow: 0 0 8px var(--red);
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    .refresh-btn {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 6px 16px;
+      border-radius: 4px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .refresh-btn:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    .stat-card.green::before {
+      background: var(--green);
+    }
+
+    .stat-card.red::before {
+      background: var(--red);
+    }
+
+    .stat-card.yellow::before {
+      background: var(--yellow);
+    }
+
+    .stat-card:hover {
+      border-color: var(--accent);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: 'Share Tech Mono', monospace;
+      line-height: 1;
+    }
+
+    .stat-card.green .stat-value {
+      color: var(--green);
+    }
+
+    .stat-card.red .stat-value {
+      color: var(--red);
+    }
+
+    .stat-card.yellow .stat-value {
+      color: var(--yellow);
+    }
+
+    .stat-sub {
+      font-size: 12px;
+      color: var(--dim);
+      margin-top: 6px;
+    }
+
+    /* Main panels */
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 212, 255, 0.03);
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .panel-badge {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 3px;
+      background: rgba(0, 212, 255, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .panel-badge.red {
+      background: rgba(255, 51, 102, 0.1);
+      color: var(--red);
+      border-color: rgba(255, 51, 102, 0.2);
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    /* Request log table */
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .log-table th {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--dim);
+      text-align: left;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+    }
+
+    .log-table td {
+      padding: 8px 10px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(26, 39, 68, 0.5);
+      color: var(--text);
+    }
+
+    .log-table tr:hover td {
+      background: rgba(0, 212, 255, 0.03);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .s200 {
+      background: rgba(0, 255, 136, 0.1);
+      color: var(--green);
+    }
+
+    .s401 {
+      background: rgba(255, 204, 0, 0.1);
+      color: var(--yellow);
+    }
+
+    .s429 {
+      background: rgba(255, 51, 102, 0.15);
+      color: var(--red);
+    }
+
+    .s502 {
+      background: rgba(255, 51, 102, 0.15);
+      color: var(--red);
+    }
+
+    .s400 {
+      background: rgba(255, 153, 0, 0.1);
+      color: #ff9900;
+    }
+
+    /* Client list */
+    .client-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .client-row:last-child {
+      border-bottom: none;
+    }
+
+    .client-id {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .client-bar-wrap {
+      flex: 1;
+      margin: 0 16px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .client-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    .client-count {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+      min-width: 40px;
+      text-align: right;
+    }
+
+    /* Brute force alerts */
+    .alert-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: rgba(255, 51, 102, 0.05);
+      border: 1px solid rgba(255, 51, 102, 0.2);
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .alert-icon {
+      font-size: 16px;
+    }
+
+    .alert-text {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--red);
+      flex: 1;
+    }
+
+    .alert-count {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--red);
+    }
+
+    .no-alerts {
+      text-align: center;
+      padding: 24px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--green);
+    }
+
+    /* Route stats */
+    .route-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .route-path {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .route-hits {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      color: var(--yellow);
+    }
+
+    /* Token generator */
+    .token-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .token-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .token-input:focus {
+      border-color: var(--accent);
+    }
+
+    .token-btn {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 8px 20px;
+      border-radius: 4px;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: opacity 0.2s;
+    }
+
+    .token-btn:hover {
+      opacity: 0.85;
+    }
+
+    .token-output {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 10px 12px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--green);
+      word-break: break-all;
+      min-height: 50px;
+      line-height: 1.6;
+    }
+
+    /* Full width panel */
+    .panel-full {
+      margin-bottom: 16px;
+    }
+
+    /* Loading state */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      color: var(--dim);
+    }
+
+    .loading::after {
+      content: '...';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+
+      0%,
+      20% {
+        content: '';
+      }
+
+      40% {
+        content: '.';
+      }
+
+      60% {
+        content: '..';
+      }
+
+      80%,
+      100% {
+        content: '...';
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .panels {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🛡</div>
+      <div>
+        <h1>API Gateway</h1>
+        <span>INDUSTRIAL SECURITY MONITOR</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-dot">
+        <div class="dot" id="statusDot"></div>
+        <span id="statusText">CONNECTING</span>
+      </div>
+      <button class="refresh-btn" onclick="loadStats()">↻ Refresh</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Stats Row -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Requests</div>
+        <div class="stat-value" id="totalRequests">—</div>
+        <div class="stat-sub">Last 1000 logged</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Active Clients</div>
+        <div class="stat-value" id="activeClients">—</div>
+        <div class="stat-sub">Unique client IDs</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-label">Brute Force Alerts</div>
+        <div class="stat-value" id="bruteForceCount">—</div>
+        <div class="stat-sub">5+ 401s in 10 min</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-label">Routes Monitored</div>
+        <div class="stat-value" id="routeCount">—</div>
+        <div class="stat-sub">Active endpoints</div>
+      </div>
+    </div>
+
+    <!-- Panels Row 1 -->
+    <div class="panels">
+
+      <!-- Recent Requests -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Recent Requests</span>
+          <span class="panel-badge" id="recentBadge">LIVE</span>
+        </div>
+        <div class="panel-body" style="padding:0;">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Route</th>
+                <th>Status</th>
+                <th>Latency</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="requestLog">
+              <tr>
+                <td colspan="5" class="loading">Loading</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Client Usage -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Client Usage</span>
+          <span class="panel-badge">24H</span>
+        </div>
+        <div class="panel-body" id="clientList">
+          <div class="loading">Loading</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Panels Row 2 -->
+    <div class="panels">
+
+      <!-- Brute Force Alerts -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">🚨 Brute Force Alerts</span>
+          <span class="panel-badge red" id="alertBadge">0 ALERTS</span>
+        </div>
+        <div class="panel-body" id="alertList">
+          <div class="no-alerts">✓ No threats detected</div>
+        </div>
+      </div>
+
+      <!-- Route Hit Counts -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Route Hit Counts</span>
+          <span class="panel-badge">24H</span>
+        </div>
+        <div class="panel-body" id="routeList">
+          <div class="loading">Loading</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Token Generator -->
+    <div class="panel panel-full">
+      <div class="panel-header">
+        <span class="panel-title">⚡ JWT Token Generator</span>
+        <span class="panel-badge">ADMIN</span>
+      </div>
+      <div class="panel-body">
+        <div class="token-form">
+          <input class="token-input" id="clientIdInput" placeholder="client_id (e.g. scada-node-01)" />
+          <input class="token-input" id="roleInput" placeholder="role (e.g. client)" style="max-width:160px" />
+          <button class="token-btn" onclick="generateToken()">Generate Token</button>
+        </div>
+        <div class="token-output" id="tokenOutput">Token will appear here after generation...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const ADMIN_URL = 'http://localhost:8081';
+
+    async function loadStats() {
+      try {
+        const res = await fetch(`${ADMIN_URL}/admin/stats`);
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+
+        // Update status
+        document.getElementById('statusDot').className = 'dot';
+        document.getElementById('statusText').textContent = 'GATEWAY ONLINE';
+
+        // Stats cards
+        document.getElementById('totalRequests').textContent = data.total_requests || 0;
+        document.getElementById('activeClients').textContent = Object.keys(data.client_counts || {}).length;
+        document.getElementById('bruteForceCount').textContent = Object.keys(data.brute_force_flags || {}).length;
+        document.getElementById('routeCount').textContent = Object.keys(data.route_counts || {}).length;
+
+        // Recent requests table
+        const tbody = document.getElementById('requestLog');
+        const requests = data.recent_requests || [];
+        if (requests.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--dim);font-family:monospace;font-size:12px">No requests yet</td></tr>';
+        } else {
+          tbody.innerHTML = requests.slice(0, 10).map(r => {
+            const statusClass = `s${r.status_code}`;
+            const time = new Date(r.timestamp).toLocaleTimeString();
+            return `<tr>
+            <td>${r.client_id}</td>
+            <td>${r.route}</td>
+            <td><span class="status-badge ${statusClass}">${r.status_code}</span></td>
+            <td>${r.latency_ms}ms</td>
+            <td>${time}</td>
+          </tr>`;
+          }).join('');
+        }
+
+        // Client usage bars
+        const clientCounts = data.client_counts || {};
+        const maxCount = Math.max(...Object.values(clientCounts), 1);
+        const clientList = document.getElementById('clientList');
+        if (Object.keys(clientCounts).length === 0) {
+          clientList.innerHTML = '<div style="text-align:center;padding:20px;color:var(--dim);font-family:monospace;font-size:12px">No client data yet</div>';
+        } else {
+          clientList.innerHTML = Object.entries(clientCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([id, count]) => `
+            <div class="client-row">
+              <span class="client-id">${id}</span>
+              <div class="client-bar-wrap">
+                <div class="client-bar" style="width:${(count / maxCount) * 100}%"></div>
+              </div>
+              <span class="client-count">${count}</span>
+            </div>
+          `).join('');
+        }
+
+        // Brute force alerts
+        const bruteFlags = data.brute_force_flags || {};
+        const alertList = document.getElementById('alertList');
+        const alertBadge = document.getElementById('alertBadge');
+        const alertCount = Object.keys(bruteFlags).length;
+        alertBadge.textContent = `${alertCount} ALERT${alertCount !== 1 ? 'S' : ''}`;
+        if (alertCount === 0) {
+          alertList.innerHTML = '<div class="no-alerts">✓ No threats detected</div>';
+        } else {
+          alertList.innerHTML = Object.entries(bruteFlags).map(([id, count]) => `
+          <div class="alert-row">
+            <span class="alert-icon">⚠️</span>
+            <span class="alert-text">Brute force detected from <strong>${id}</strong></span>
+            <span class="alert-count">${count} 401s</span>
+          </div>
+        `).join('');
+        }
+
+        // Route counts
+        const routeCounts = data.route_counts || {};
+        const routeList = document.getElementById('routeList');
+        if (Object.keys(routeCounts).length === 0) {
+          routeList.innerHTML = '<div style="text-align:center;padding:20px;color:var(--dim);font-family:monospace;font-size:12px">No route data yet</div>';
+        } else {
+          routeList.innerHTML = Object.entries(routeCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([route, count]) => `
+            <div class="route-row">
+              <span class="route-path">${route}</span>
+              <span class="route-hits">${count} hits</span>
+            </div>
+          `).join('');
+        }
+
+      } catch (e) {
+        document.getElementById('statusDot').className = 'dot red';
+        document.getElementById('statusText').textContent = 'GATEWAY OFFLINE';
+      }
+    }
+
+    async function generateToken() {
+      const clientId = document.getElementById('clientIdInput').value.trim();
+      const role = document.getElementById('roleInput').value.trim() || 'client';
+      const output = document.getElementById('tokenOutput');
+
+      if (!clientId) {
+        output.textContent = '⚠ Please enter a client_id';
+        output.style.color = 'var(--red)';
+        return;
+      }
+
+      output.style.color = 'var(--dim)';
+      output.textContent = 'Generating...';
+
+      try {
+        const res = await fetch(`${ADMIN_URL}/admin/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ client_id: clientId, role: role })
+        });
+        const data = await res.json();
+        if (data.token) {
+          output.style.color = 'var(--green)';
+          output.textContent = `Bearer ${data.token}\n\nExpires in: ${data.expires_in}s`;
+        } else {
+          output.style.color = 'var(--red)';
+          output.textContent = JSON.stringify(data, null, 2);
+        }
+      } catch (e) {
+        output.style.color = 'var(--red)';
+        output.textContent = '⚠ Admin server unreachable — is the gateway running?';
+      }
+    }
+
+    // Auto-refresh every 5 seconds
+    loadStats();
+    setInterval(loadStats, 5000);
+  </script>
+</body>
+
+</html>

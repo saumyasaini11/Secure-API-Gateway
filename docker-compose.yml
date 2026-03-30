@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: gateway-redis
+    command: redis-server --requirepass securepass123
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - gateway-net
+
+networks:
+  gateway-net:
+    driver: bridge
+
+volumes:
+  redis_data:
