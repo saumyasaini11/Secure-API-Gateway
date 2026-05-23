@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -44,24 +45,17 @@ func main() {
 	var reporter analytics.StatsReporter
 	var threatStore detection.ThreatStore
 
-	var redisClient *redis.Client
-	var opt *redis.Options
 	redisURL := os.Getenv("REDIS_URL")
-	if redisURL != "" {
-		var err error
-		opt, err = redis.ParseURL(redisURL)
-		if err != nil {
-			logger.Fatal("Failed to parse REDIS_URL", zap.Error(err))
-		}
-		redisClient = redis.NewClient(opt)
-	} else {
-		opt = &redis.Options{
-			Addr:     cfg.Redis.Addr,
-			Password: cfg.Redis.Password,
-			DB:       cfg.Redis.DB,
-		}
-		redisClient = redis.NewClient(opt)
+	if redisURL == "" {
+		redisURL = "redis://default:JSlTdKNSzkiWZQuaTZWdfJElFZDJpIhW@redis.railway.internal:6379"
 	}
+
+	opt, err := redis.ParseURL(redisURL)
+	if err != nil {
+		log.Fatal("Failed to parse Redis URL: ", err)
+	}
+
+	redisClient := redis.NewClient(opt)
 
 	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		logger.Warn("Redis unavailable – using in-memory fallbacks (rate limit + analytics)",
