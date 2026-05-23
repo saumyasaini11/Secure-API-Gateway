@@ -1,4 +1,4 @@
-﻿package config
+package config
 
 import (
     "log"
@@ -61,6 +61,13 @@ func Load(path string) *Config {
     decoder := yaml.NewDecoder(f)
     if err := decoder.Decode(&cfg); err != nil {
         log.Fatalf("Failed to parse config file: %v", err)
+    }
+
+    // Allow environment variables to override YAML values.
+    // This is used by docker-compose to point the gateway at the Redis
+    // container (redis:6379) without requiring a separate config file.
+    if addr := os.Getenv("REDIS_ADDR"); addr != "" {
+        cfg.Redis.Addr = addr
     }
 
     if cfg.JWT.PrivateKeyPath == "" || cfg.JWT.PublicKeyPath == "" {

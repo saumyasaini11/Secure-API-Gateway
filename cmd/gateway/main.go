@@ -14,6 +14,7 @@ import (
 	"secure-api-gateway/internal/analytics"
 	"secure-api-gateway/internal/auth"
 	"secure-api-gateway/internal/config"
+	"secure-api-gateway/internal/detection"
 	"secure-api-gateway/internal/proxy"
 	"secure-api-gateway/internal/ratelimit"
 
@@ -23,6 +24,8 @@ import (
 )
 
 func main() {
+	startTime := time.Now()
+
 	// ── Logger ────────────────────────────────────────────────
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
@@ -39,6 +42,7 @@ func main() {
 	var limiter ratelimit.Limiter
 	var analyticsLogger analytics.RequestLogger
 	var reporter analytics.StatsReporter
+	var threatStore detection.ThreatStore
 
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     cfg.Redis.Addr,
@@ -54,11 +58,13 @@ func main() {
 		analyticsLogger = memStore
 		reporter = memStore
 		limiter = ratelimit.NewMemoryLimiter()
+		threatStore = detection.NewMemoryThreatStore()
 	} else {
 		logger.Info("Redis connected", zap.String("addr", cfg.Redis.Addr))
 		analyticsLogger = analytics.NewLogger(redisClient)
 		reporter = analytics.NewReporter(redisClient)
 		limiter = ratelimit.NewRedisLimiter(cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.DB)
+		threatStore = detection.NewRedisThreatStore(redisClient)
 	}
 
 	// ── JWT Manager ───────────────────────────────────────────
@@ -81,9 +87,12 @@ func main() {
 
 	// ── Router ────────────────────────────────────────────────
 	router := mux.NewRouter()
+	// Security middleware — runs on ALL routes before JWT validation
+	router.Use(detection.IPBlocklistMiddleware(redisClient, logger))
+	router.Use(detection.AttackDetectionMiddleware(threatStore, logger))
 
-	// Public auth endpoint
-	router.HandleFunc(cfg.Auth.TokenEndpoint, func(w http.ResponseWriter, r *http.Request) {
+	// Public auth endpoint (rate limited)
+	router.Handle(cfg.Auth.TokenEndpoint, rlMiddleware.Limit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			ClientID string `json:"client_id"`
 			Secret   string `json:"secret"`
@@ -99,7 +108,7 @@ func main() {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, `{"token":"%s","expires_in":%d}`, token, cfg.JWT.TokenTTLMin*60)
-	}).Methods("POST")
+	}))).Methods("POST")
 
 	// Protected API routes
 	protected := router.PathPrefix("/api").Subrouter()
@@ -109,7 +118,7 @@ func main() {
 	protected.PathPrefix("/").HandlerFunc(gateway.Handler())
 
 	// ── Admin Server ──────────────────────────────────────────
-	adminServer := api.NewAdminServer(reporter, jwtMgr, cfg, logger)
+	adminServer := api.NewAdminServer(reporter, threatStore, redisClient, jwtMgr, cfg, logger, startTime)
 
 	// ── HTTP Servers ──────────────────────────────────────────
 	mainSrv := &http.Server{
@@ -120,7 +129,7 @@ func main() {
 		IdleTimeout:  30 * time.Second,
 	}
 	adminSrv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.Server.AdminPort),
+		Addr:         fmt.Sprintf("localhost:%d", cfg.Server.AdminPort),
 		Handler:      adminServer.Router(),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,

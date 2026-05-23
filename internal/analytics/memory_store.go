@@ -2,10 +2,7 @@ package analytics
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"sync"
-	"time"
 )
 
 // MemoryStore is a thread-safe in-memory analytics store.
@@ -102,13 +99,3 @@ type RequestLogger interface {
 type StatsReporter interface {
 	GetStats(ctx context.Context) (*Stats, error)
 }
-
-// ── JSON round-trip helpers (used by dashboard SSE) ─────────────────────────
-
-func MarshalStats(s *Stats) ([]byte, error) {
-	return json.Marshal(s)
-}
-
-// ── Unused import guard ──────────────────────────────────────────────────────
-var _ = fmt.Sprintf
-var _ = time.Second

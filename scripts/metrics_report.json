@@ -1,0 +1,10 @@
+﻿{
+    "requests_sent":  18,
+    "blocked_count":  14,
+    "detection_rate_pct":  77.78,
+    "avg_latency_ms":  4.54,
+    "requests_per_second":  210.53,
+    "total_time_seconds":  0.95,
+    "errors":  100,
+    "generated_at":  "2026-05-23T13:21:41Z"
+}

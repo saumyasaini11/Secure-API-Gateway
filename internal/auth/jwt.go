@@ -84,5 +84,8 @@ func (j *JWTManager) ValidateToken(tokenStr string) (*Claims, error) {
     if !ok || !token.Valid {
         return nil, errors.New("invalid token claims")
     }
+    if claims.Issuer != j.issuer {
+        return nil, errors.New("invalid token issuer")
+    }
     return claims, nil
 }
