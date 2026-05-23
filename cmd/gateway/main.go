@@ -120,9 +120,14 @@ func main() {
 	// ── Admin Server ──────────────────────────────────────────
 	adminServer := api.NewAdminServer(reporter, threatStore, redisClient, jwtMgr, cfg, logger, startTime)
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	// ── HTTP Servers ──────────────────────────────────────────
 	mainSrv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
+		Addr:         ":" + port,
 		Handler:      router,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -136,7 +141,7 @@ func main() {
 	}
 
 	go func() {
-		logger.Info("Gateway listening", zap.Int("port", cfg.Server.Port))
+		logger.Info("Gateway listening", zap.String("port", port))
 		if err := mainSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Fatal("Gateway error", zap.Error(err))
 		}
