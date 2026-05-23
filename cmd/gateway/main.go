@@ -44,14 +44,28 @@ func main() {
 	var reporter analytics.StatsReporter
 	var threatStore detection.ThreatStore
 
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     cfg.Redis.Addr,
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.DB,
-	})
+	var redisClient *redis.Client
+	var opt *redis.Options
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL != "" {
+		var err error
+		opt, err = redis.ParseURL(redisURL)
+		if err != nil {
+			logger.Fatal("Failed to parse REDIS_URL", zap.Error(err))
+		}
+		redisClient = redis.NewClient(opt)
+	} else {
+		opt = &redis.Options{
+			Addr:     cfg.Redis.Addr,
+			Password: cfg.Redis.Password,
+			DB:       cfg.Redis.DB,
+		}
+		redisClient = redis.NewClient(opt)
+	}
+
 	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		logger.Warn("Redis unavailable – using in-memory fallbacks (rate limit + analytics)",
-			zap.String("addr", cfg.Redis.Addr),
+			zap.String("addr", opt.Addr),
 			zap.Error(err),
 		)
 		memStore := analytics.NewMemoryStore()
@@ -60,10 +74,10 @@ func main() {
 		limiter = ratelimit.NewMemoryLimiter()
 		threatStore = detection.NewMemoryThreatStore()
 	} else {
-		logger.Info("Redis connected", zap.String("addr", cfg.Redis.Addr))
+		logger.Info("Redis connected", zap.String("addr", opt.Addr))
 		analyticsLogger = analytics.NewLogger(redisClient)
 		reporter = analytics.NewReporter(redisClient)
-		limiter = ratelimit.NewRedisLimiter(cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.DB)
+		limiter = ratelimit.NewRedisLimiter(opt.Addr, opt.Password, opt.DB)
 		threatStore = detection.NewRedisThreatStore(redisClient)
 	}
 
